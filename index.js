@@ -128,6 +128,41 @@ const addEmployee = async () => {
         })
 }
 
+const updateEmployeeRole = async () => {
+    const employeeQuery = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) name FROM employee e;`);
+    const employeeArr = employeeQuery.map(({id, name}) => ({
+        name: name,
+        value: id
+    }));
+    const roleQuery = await db.query(`SELECT id, title FROM role`);
+    const roleArr = roleQuery.map(({id, title}) => ({
+        name: title,
+        value: id
+    }));
+
+    await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Which employee's role do you want to update?",
+                name: "id",
+                choices: employeeArr
+            },
+            {
+                type: "list",
+                message: "Which role do you want to assign the selected employee?",
+                name: "newRole",
+                choices: roleArr
+            }
+        ])
+        .then(data => {
+            db.query(`UPDATE employee SET role_id = ${data.newRole} WHERE id = ${data.id};`);
+            console.log("Updated employee's role");
+
+            standby();
+        })
+}
+
 const standby = async () => {
     const input = await inquirer
         .prompt([
@@ -190,6 +225,9 @@ const standby = async () => {
             else if (val.choice === "Add Employee") {
                 addEmployee();
             }
+            else if (val.choice === "Update Employee Role") {
+                updateEmployeeRole();
+            }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")
             }
@@ -211,8 +249,7 @@ init();
 
 /*
     TODO:
-    * Update an Employee Role
-     
+
     Optional:
 
     * Update employee managers

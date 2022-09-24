@@ -1,6 +1,7 @@
 const inquirer = require('inquirer');
 const mysql = require('mysql2');
 const cTable = require('console.table');
+const util = require('util');
 
 const db = mysql.createConnection(
     {
@@ -12,55 +13,134 @@ const db = mysql.createConnection(
     console.log(`Connected to the employee_db database.`)
   );
 
-db.connect((err) => {
-    if (err) {
-        throw err;
-    }
-})
+db.connect();
+db.query = util.promisify(db.query);
 
-const viewAllDepartments = () => {
-    db.query(`SELECT * FROM department`, function(err, results) {
-        console.table(results)
-    })
+const viewTable = async (query) => {
+    const table = await db.query(query);
+    console.log("\n")
+    console.table(table);
+
+    standby();
+
 }
 
-const viewAllRoles = () => {
-    db.query(`
-    SELECT 
-        role.id,
-        role.title,
-	    department.name AS department,
-	    role.salary
-    FROM role
-    JOIN department 
-	ON department.id = role.department_id;`, function(err, results) {
-        console.table(results);
-    })
+const addDept = async () => {
+    await inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the name of the department?",
+                name: "dept_name",
+            }
+        ])
+        .then(data => {
+            db.query(`
+                INSERT INTO department(name)
+                VALUES ("${data.dept_name}")`)
+                console.log(`Added ${data.dept_name} to the database`)
+
+            standby();
+        })
 }
 
-const standby = () => {
+const addRole = async () => {
+    const deptQuery = await db.query(`SELECT * FROM department;`);
+
+
+    const deptChoice = deptQuery.map(({id, name}) => ({
+        name: name,
+        value: id
+    }));
+    
+
     inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the name of the role?",
+                name: "role_name"
+            },
+            {
+                type: "number",
+                message: "What is the salary of the role?",
+                name: "role_salary"
+            },
+            {
+                type: "list",
+                message: "What department does the role belong to?",
+                name: "dept_id",
+                choices: deptChoice
+            }
+        ])
+        .then(data => {
+            db.query(`
+                INSERT INTO role(title, salary, department_id)
+                VALUES ("${data.role_name}", ${data.role_salary}, ${data.dept_id})`);
+            console.log(`Added ${data.role_name} to the database`)
+
+            standby();
+        })
+}
+
+const standby = async () => {
+    const input = await inquirer
         .prompt([
             {
                 type: "list",
                 message: "What would you like to do?",
                 name: "choice",
-                choices: ["View All Departments",
+                choices: [
+                            "View All Departments",
                             "View All Roles",
                             "View All Employees",
                             "Add Department",
                             "Add Role",
                             "Add Employee",
                             "Update Employee Role",
-                            "Exit"]
+                            "Exit"
+                        ]
             }
         ])
         .then(val => {
             if (val.choice === "View All Departments") {
-                viewAllDepartments();
+                viewTable(`SELECT * FROM department`);
             }
             else if (val.choice === "View All Roles") {
-                viewAllRoles();
+                viewTable(`
+                SELECT 
+                    role.id,
+                    role.title,
+                    department.name AS department,
+                    role.salary
+                FROM role
+                JOIN department 
+                ON department.id = role.department_id;`);
+            }
+            else if (val.choice === "View All Employees") {
+                viewTable(`
+                SELECT
+                e.id,
+                    e.first_name,
+                    e.last_name,
+                    role.title AS title,
+                    department.name AS department,
+                    role.salary,
+                    CONCAT(m.first_name, ' ', m.last_name) manager
+                FROM
+                    employee e
+                JOIN role
+                    ON e.role_id = role.id
+                JOIN department 
+                    ON department.id = role.department_id
+                LEFT OUTER JOIN employee AS m
+                    ON e.manager_id = m.id;`);
+            }
+            else if (val.choice === "Add Department") {
+                addDept();
+            }
+            else if (val.choice === "Add Role") {
+                addRole();
             }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")
@@ -69,13 +149,7 @@ const standby = () => {
                 process.exit(0);
             }
 
-            setTimeout(() => {
-                standby()
-            }, 1000);
         })
-
-        // const result = await viewAllDepartments();
-        // console.log(result)
 }
 
 const init = async () => {
@@ -89,12 +163,14 @@ init();
 
 /*
     TODO:
-
-    * Add View All Departments (done)
-    * View All Roles (done)
-    * View All Employees
-    * Add a Department
-    * Add a Role
     * Add an Employee
     * Update an Employee Role
+     
+    Optional:
+
+    * Update employee managers
+    * View employees by managers
+    * View employees by department
+    * Delete departments, roles and employees
+    * View combined salary of a department
 */

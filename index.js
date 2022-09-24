@@ -46,15 +46,13 @@ const addDept = async () => {
 
 const addRole = async () => {
     const deptQuery = await db.query(`SELECT * FROM department;`);
-
-
     const deptChoice = deptQuery.map(({id, name}) => ({
         name: name,
         value: id
     }));
     
 
-    inquirer
+    await inquirer
         .prompt([
             {
                 type: "input",
@@ -78,6 +76,53 @@ const addRole = async () => {
                 INSERT INTO role(title, salary, department_id)
                 VALUES ("${data.role_name}", ${data.role_salary}, ${data.dept_id})`);
             console.log(`Added ${data.role_name} to the database`)
+
+            standby();
+        })
+}
+
+const addEmployee = async () => {
+    const roleQuery = await db.query(`SELECT id, title FROM role`);
+    const roleArr = roleQuery.map(({id, title}) => ({
+        name: title,
+        value: id
+    }));
+    const managerQuery = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) manager FROM employee e WHERE manager_id IS NULL;`);
+    const managerArr = managerQuery.map(({id, manager}) => ({
+        name: manager,
+        value: id
+    }));
+    managerArr.unshift({name: "None", value: null})
+
+    await inquirer
+        .prompt([
+            {
+                type: "input",
+                message: "What is the employee's first name?",
+                name: "first_name"
+            },
+            {
+                type: "input",
+                message: "What is the employee's last name?",
+                name: "last_name"
+            },
+            {
+                type: "list",
+                message: "What is the employee's role?",
+                name: "role",
+                choices: roleArr
+            },
+            {
+                type: "list",
+                message: "Who is the employee's manager?",
+                name: "manager",
+                choices: managerArr
+            }
+        ])
+        .then(data => {
+            db.query(`INSERT INTO employee(first_name, last_name, role_id, manager_id)
+                    VALUES ("${data.first_name}", "${data.last_name}", ${data.role}, ${data.manager});`);
+            console.log(`Added ${data.first_name}  ${data.last_name} to the database`);
 
             standby();
         })
@@ -142,6 +187,9 @@ const standby = async () => {
             else if (val.choice === "Add Role") {
                 addRole();
             }
+            else if (val.choice === "Add Employee") {
+                addEmployee();
+            }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")
             }
@@ -163,7 +211,6 @@ init();
 
 /*
     TODO:
-    * Add an Employee
     * Update an Employee Role
      
     Optional:

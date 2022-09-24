@@ -163,6 +163,46 @@ const updateEmployeeRole = async () => {
         })
 }
 
+const viewEmployeesByManager = async () => {
+    const managerQuery = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) manager FROM employee e WHERE manager_id IS NULL;`);
+    const managerArr = managerQuery.map(({id, manager}) => ({
+        name: manager,
+        value: id
+    }));
+    
+    await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Select which manager to view what employees they manage.",
+                name: "manager",
+                choices: managerArr
+            }
+        ])
+        .then(data => {
+            viewTable(`
+            SELECT
+                e.id,
+                    e.first_name,
+                    e.last_name,
+                    role.title AS title,
+                    department.name AS department,
+                    role.salary,
+                    CONCAT(m.first_name, ' ', m.last_name) manager
+            FROM
+                employee e
+            JOIN role
+                ON e.role_id = role.id
+            JOIN department 
+                ON department.id = role.department_id
+            LEFT OUTER JOIN employee AS m
+                ON e.manager_id = m.id
+            WHERE
+                e.manager_id = ${data.manager};`)
+        })
+
+}
+
 const standby = async () => {
     const input = await inquirer
         .prompt([
@@ -178,6 +218,7 @@ const standby = async () => {
                             "Add Role",
                             "Add Employee",
                             "Update Employee Role",
+                            "View Employees by Manager",
                             "Exit"
                         ]
             }
@@ -228,8 +269,12 @@ const standby = async () => {
             else if (val.choice === "Update Employee Role") {
                 updateEmployeeRole();
             }
+            else if (val.choice === "View Employees by Manager") {
+                viewEmployeesByManager();
+            }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")
+                standby();
             }
             else {
                 process.exit(0);
@@ -253,7 +298,6 @@ init();
     Optional:
 
     * Update employee managers
-    * View employees by managers
     * View employees by department
     * Delete departments, roles and employees
     * View combined salary of a department

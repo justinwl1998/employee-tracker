@@ -20,7 +20,7 @@ db.query = util.promisify(db.query);
 // Rather than have a bunch of redundant db.query calls, I decided to have a single function that deals with viewing tables specifically
 const viewTable = async (query) => {
     const table = await db.query(query);
-    console.log('\n')
+    console.log('')
     console.table(table);
 
     standby();
@@ -349,7 +349,7 @@ const getDeptBudget = async () => {
             viewTable(`
             SELECT
                 department.name AS department,
-                SUM(role.salary)
+                SUM(role.salary) AS "utilized budget"
             FROM
                 employee e
             LEFT JOIN role

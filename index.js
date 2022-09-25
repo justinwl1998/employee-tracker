@@ -221,12 +221,12 @@ const viewEmployeesByManager = async () => {
             viewTable(`
             SELECT
                 e.id,
-                    e.first_name,
-                    e.last_name,
-                    role.title AS title,
-                    department.name AS department,
-                    role.salary,
-                    CONCAT(m.first_name, ' ', m.last_name) manager
+                e.first_name,
+                e.last_name,
+                role.title AS title,
+                department.name AS department,
+                role.salary,
+                CONCAT(m.first_name, ' ', m.last_name) manager
             FROM
                 employee e
             JOIN role
@@ -260,12 +260,12 @@ const viewEmployeesByDept = async () => {
             viewTable(`
             SELECT
                 e.id,
-                    e.first_name,
-                    e.last_name,
-                    role.title AS title,
-                    department.name AS department,
-                    role.salary,
-                    CONCAT(m.first_name, ' ', m.last_name) manager
+                e.first_name,
+                e.last_name,
+                role.title AS title,
+                department.name AS department,
+                role.salary,
+                CONCAT(m.first_name, ' ', m.last_name) manager
             FROM
                 employee e
             JOIN role
@@ -278,6 +278,51 @@ const viewEmployeesByDept = async () => {
                 department.id = ${data.dept};
             `)
         });
+}
+
+const deleteElement = async (table) => {
+    let query;
+    let choiceArr;
+
+    switch(table) {
+        case "Department":
+            query = await db.query(`SELECT * FROM department;`);
+            choiceArr = query.map(({id, name}) => ({
+                name: name,
+                value: id
+            }));
+            break;
+        case "Role":
+            query = await db.query(`SELECT * FROM role;`);
+            choiceArr = query.map(({id, title}) => ({
+                name: title,
+                value: id
+            }));
+            break;
+        case "Employee":
+            query = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) name FROM employee e;`);
+            choiceArr = query.map(({id, name}) => ({
+                name: name,
+                value: id
+            }));
+            break;
+    }
+
+    await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: `Select which ${table.toLowerCase()} to delete.`,
+                name: "deleted",
+                choices: choiceArr
+            }
+        ])
+        .then(data => {
+            db.query(`DELETE FROM ${table.toLowerCase()} WHERE id = ${data.deleted}`);
+            console.log(`${table} successfully deleted from database.`);
+
+            standby();
+        })
 }
 
 const standby = async () => {
@@ -298,6 +343,9 @@ const standby = async () => {
                             "Update Employee Managers",
                             "View Employees by Manager",
                             "View Employees by Department",
+                            "Delete Department",
+                            "Delete Role",
+                            "Delete Employee",
                             "Exit"
                         ]
             }
@@ -314,7 +362,7 @@ const standby = async () => {
                     department.name AS department,
                     role.salary
                 FROM role
-                JOIN department 
+                LEFT JOIN department 
                 ON department.id = role.department_id;`);
             }
             else if (val.choice === "View All Employees") {
@@ -329,9 +377,9 @@ const standby = async () => {
                     CONCAT(m.first_name, ' ', m.last_name) manager
                 FROM
                     employee e
-                JOIN role
+                LEFT JOIN role
                     ON e.role_id = role.id
-                JOIN department 
+                LEFT JOIN department 
                     ON department.id = role.department_id
                 LEFT OUTER JOIN employee AS m
                     ON e.manager_id = m.id;`);
@@ -356,6 +404,15 @@ const standby = async () => {
             }
             else if (val.choice === "View Employees by Department") {
                 viewEmployeesByDept();
+            }
+            else if (val.choice === "Delete Department") {
+                deleteElement("Department");
+            }
+            else if (val.choice === "Delete Role") {
+                deleteElement("Role");
+            }
+            else if (val.choice === "Delete Employee") {
+                deleteElement("Employee");
             }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")

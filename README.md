@@ -17,7 +17,7 @@ A Node.js command line program that interacts with a SQL database to view, add, 
 
 ## Preview
 
-[todo]
+View the [demo video](https://drive.google.com/file/d/1PZMJDnBnYbbgs07ll4L2YhJaTIS7UMBK/view)
 
 ## Author
 

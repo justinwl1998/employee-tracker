@@ -325,6 +325,41 @@ const deleteElement = async (table) => {
         })
 }
 
+const getDeptBudget = async () => {
+    const deptQuery = await db.query(`SELECT * FROM department;`);
+    const deptChoice = deptQuery.map(({id, name}) => ({
+        name: name,
+        value: id
+    }));
+    
+    await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Select which department to view the total utilized budget of.",
+                name: "dept",
+                choices: deptChoice
+            }
+        ])
+        .then(data => {
+            viewTable(`
+            SELECT
+                department.name AS department,
+                SUM(role.salary)
+            FROM
+                employee e
+            LEFT JOIN role
+                ON e.role_id = role.id
+            LEFT JOIN department 
+                ON department.id = role.department_id
+            LEFT OUTER JOIN employee AS m
+                ON e.manager_id = m.id
+            WHERE
+                department.id = ${data.dept};
+            `)
+        })
+}
+
 const standby = async () => {
     const input = await inquirer
         .prompt([
@@ -346,6 +381,7 @@ const standby = async () => {
                             "Delete Department",
                             "Delete Role",
                             "Delete Employee",
+                            "View Department Budget",
                             "Exit"
                         ]
             }
@@ -414,9 +450,8 @@ const standby = async () => {
             else if (val.choice === "Delete Employee") {
                 deleteElement("Employee");
             }
-            else if (val.choice !== "Exit") {
-                console.log("NOT IMPLEMENTED YET")
-                standby();
+            else if (val.choice === "View Department Budget") {
+                getDeptBudget();
             }
             else {
                 process.exit(0);
@@ -433,10 +468,3 @@ const init = async () => {
 }
 
 init();
-
-/*
-    TODO:
-
-    Optional:
-    * View combined salary of a department
-*/

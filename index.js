@@ -229,9 +229,9 @@ const viewEmployeesByManager = async () => {
                 CONCAT(m.first_name, ' ', m.last_name) manager
             FROM
                 employee e
-            JOIN role
+            LEFT JOIN role
                 ON e.role_id = role.id
-            JOIN department 
+            LEFT JOIN department 
                 ON department.id = role.department_id
             LEFT OUTER JOIN employee AS m
                 ON e.manager_id = m.id
@@ -268,9 +268,9 @@ const viewEmployeesByDept = async () => {
                 CONCAT(m.first_name, ' ', m.last_name) manager
             FROM
                 employee e
-            JOIN role
+            LEFT JOIN role
                 ON e.role_id = role.id
-            JOIN department 
+            LEFT JOIN department 
                 ON department.id = role.department_id
             LEFT OUTER JOIN employee AS m
                 ON e.manager_id = m.id
@@ -352,7 +352,7 @@ const standby = async () => {
         ])
         .then(val => {
             if (val.choice === "View All Departments") {
-                viewTable(`SELECT * FROM department`);
+                viewTable(`SELECT * FROM department;`);
             }
             else if (val.choice === "View All Roles") {
                 viewTable(`
@@ -438,6 +438,5 @@ init();
     TODO:
 
     Optional:
-    * Delete departments, roles and employees
     * View combined salary of a department
 */

@@ -163,6 +163,43 @@ const updateEmployeeRole = async () => {
         })
 }
 
+const updateManagers = async () => {
+    const employeeQuery = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) name FROM employee e;`);
+    let employeeArr = employeeQuery.map(({id, name}) => ({
+        name: name,
+        value: id
+    }));
+
+    const emp = await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Select which employee to update their manager.",
+                name: "id",
+                choices: employeeArr
+            }
+        ])
+
+    employeeArr = employeeArr.filter(em => em.value !== emp.id);
+    employeeArr.unshift({name: "None", value: null});
+
+    const mgr = await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Select which manager manages this employee.",
+                name: "manager",
+                choices: employeeArr
+            }
+        ])
+        .then(data => {
+            db.query(`UPDATE employee SET manager_id = ${data.manager} WHERE id = ${emp.id};`);
+            console.log("Updated employee's manager");
+
+            standby();
+        })
+}
+
 const viewEmployeesByManager = async () => {
     const managerQuery = await db.query(`SELECT e.id, CONCAT(e.first_name, ' ', e.last_name) manager FROM employee e WHERE manager_id IS NULL;`);
     const managerArr = managerQuery.map(({id, manager}) => ({
@@ -218,6 +255,7 @@ const standby = async () => {
                             "Add Role",
                             "Add Employee",
                             "Update Employee Role",
+                            "Update Employee Managers",
                             "View Employees by Manager",
                             "Exit"
                         ]
@@ -269,6 +307,9 @@ const standby = async () => {
             else if (val.choice === "Update Employee Role") {
                 updateEmployeeRole();
             }
+            else if (val.choice === "Update Employee Managers") {
+                updateManagers();
+            }
             else if (val.choice === "View Employees by Manager") {
                 viewEmployeesByManager();
             }
@@ -296,8 +337,6 @@ init();
     TODO:
 
     Optional:
-
-    * Update employee managers
     * View employees by department
     * Delete departments, roles and employees
     * View combined salary of a department

@@ -180,10 +180,11 @@ const updateManagers = async () => {
             }
         ])
 
+    // Update the choice array to not include the employee selected before
     employeeArr = employeeArr.filter(em => em.value !== emp.id);
     employeeArr.unshift({name: "None", value: null});
 
-    const mgr = await inquirer
+    await inquirer
         .prompt([
             {
                 type: "list",
@@ -237,7 +238,46 @@ const viewEmployeesByManager = async () => {
             WHERE
                 e.manager_id = ${data.manager};`)
         })
+}
 
+const viewEmployeesByDept = async () => {
+    const deptQuery = await db.query(`SELECT * FROM department;`);
+    const deptChoice = deptQuery.map(({id, name}) => ({
+        name: name,
+        value: id
+    }));
+
+    await inquirer
+        .prompt([
+            {
+                type: "list",
+                message: "Select which department to view the employees working in it.",
+                choices: deptChoice,
+                name: "dept"
+            }
+        ])
+        .then(data => {
+            viewTable(`
+            SELECT
+                e.id,
+                    e.first_name,
+                    e.last_name,
+                    role.title AS title,
+                    department.name AS department,
+                    role.salary,
+                    CONCAT(m.first_name, ' ', m.last_name) manager
+            FROM
+                employee e
+            JOIN role
+                ON e.role_id = role.id
+            JOIN department 
+                ON department.id = role.department_id
+            LEFT OUTER JOIN employee AS m
+                ON e.manager_id = m.id
+            WHERE
+                department.id = ${data.dept};
+            `)
+        });
 }
 
 const standby = async () => {
@@ -257,6 +297,7 @@ const standby = async () => {
                             "Update Employee Role",
                             "Update Employee Managers",
                             "View Employees by Manager",
+                            "View Employees by Department",
                             "Exit"
                         ]
             }
@@ -313,6 +354,9 @@ const standby = async () => {
             else if (val.choice === "View Employees by Manager") {
                 viewEmployeesByManager();
             }
+            else if (val.choice === "View Employees by Department") {
+                viewEmployeesByDept();
+            }
             else if (val.choice !== "Exit") {
                 console.log("NOT IMPLEMENTED YET")
                 standby();
@@ -337,7 +381,6 @@ init();
     TODO:
 
     Optional:
-    * View employees by department
     * Delete departments, roles and employees
     * View combined salary of a department
 */

@@ -13,16 +13,17 @@ const db = mysql.createConnection(
     console.log(`Connected to the employee_db database.`)
   );
 
-db.connect();
+// This makes the program work asynchronously, otherwise without this it won't work
 db.query = util.promisify(db.query);
 
+
+// Rather than have a bunch of redundant db.query calls, I decided to have a single function that deals with viewing tables specifically
 const viewTable = async (query) => {
     const table = await db.query(query);
-    console.log("\n")
+    console.log('\n')
     console.table(table);
 
     standby();
-
 }
 
 const addDept = async () => {
@@ -45,6 +46,7 @@ const addDept = async () => {
 }
 
 const addRole = async () => {
+    // Query from the table and then map it to an array to represent the choices for inquirer
     const deptQuery = await db.query(`SELECT * FROM department;`);
     const deptChoice = deptQuery.map(({id, name}) => ({
         name: name,
@@ -82,6 +84,7 @@ const addRole = async () => {
 }
 
 const addEmployee = async () => {
+    // Do two queries
     const roleQuery = await db.query(`SELECT id, title FROM role`);
     const roleArr = roleQuery.map(({id, title}) => ({
         name: title,
@@ -284,6 +287,7 @@ const deleteElement = async (table) => {
     let query;
     let choiceArr;
 
+    // Use a different query based on what argument is passed into the function
     switch(table) {
         case "Department":
             query = await db.query(`SELECT * FROM department;`);
@@ -461,8 +465,16 @@ const standby = async () => {
 }
 
 const init = async () => {
-    console.log("Employee Tracker Program - Replace with something fancier later")
-    console.log("Hello mo, goodbye mo.");
+    console.log("===============================================================================================================");
+    console.log('#######                                                    #######                                           ');
+    console.log('#       #    # #####  #       ####  #   # ###### ######       #    #####    ##    ####  #    # ###### #####  ');
+    console.log('#       ##  ## #    # #      #    #  # #  #      #            #    #    #  #  #  #    # #   #  #      #    # ');
+    console.log('#####   # ## # #    # #      #    #   #   #####  #####        #    #    # #    # #      ####   #####  #    # ');
+    console.log('#       #    # #####  #      #    #   #   #      #            #    #####  ###### #      #  #   #      #####  ');
+    console.log('#       #    # #      #      #    #   #   #      #            #    #   #  #    # #    # #   #  #      #   #  ');
+    console.log('####### #    # #      ######  ####    #   ###### ######       #    #    # #    #  ####  #    # ###### #    # ');
+    console.log("===============================================================================================================\n");
+    
     
     standby();
 }
